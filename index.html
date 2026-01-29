@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDG Company | Elite Gaming</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&display=swap" rel="stylesheet">
+    <!-- Font Awesome para os ícones das redes sociais -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000000;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        .red-gradient {
+            background: linear-gradient(135deg, #ff0000 0%, #a30000 100%);
+        }
+
+        .glass-card {
+            background: rgba(15, 15, 15, 0.9);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .glass-card:hover {
+            border-color: #ff0000;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 40px rgba(255, 0, 0, 0.2);
+        }
+
+        .text-glow {
+            text-shadow: 0 0 20px rgba(255, 0, 0, 0.8);
+        }
+
+        .nav-link {
+            position: relative;
+            transition: color 0.3s ease;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -4px;
+            left: 0;
+            background-color: #ff0000;
+            transition: width 0.3s ease;
+        }
+
+        .nav-link:hover::after {
+            width: 100%;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-fade {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: #ff0000; border-radius: 4px; }
+
+        .text-outline {
+            -webkit-text-stroke: 1.5px #ff0000;
+        }
+
+        .carousel-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        .carousel-item {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            transition: opacity 0.8s ease-in-out;
+            background-size: cover;
+            background-position: center;
+        }
+        .carousel-item.active {
+            opacity: 0.65;
+        }
+        .carousel-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to bottom, 
+                rgba(0,0,0,0.95) 0%, 
+                rgba(0,0,0,0.2) 50%, 
+                rgba(0,0,0,1) 100%);
+        }
+
+        .gold-glow {
+            text-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+            color: #ffd700;
+        }
+
+        .purple-glow {
+            text-shadow: 0 0 15px rgba(168, 85, 247, 0.5);
+            color: #a855f7;
+        }
+        
+        .tag-badge {
+            background: rgba(255, 0, 0, 0.1);
+            border: 1px solid #ff0000;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 900;
+            letter-spacing: 0.1em;
+        }
+    </style>
+</head>
+<body class="selection:bg-red-600 selection:text-white">
+
+    <!-- Navbar -->
+    <nav class="fixed w-full z-50 px-8 py-5 flex justify-between items-center bg-black/95 backdrop-blur-xl border-b border-red-900/40">
+        <div class="text-2xl font-black tracking-tighter italic">
+            PDG<span class="text-red-600">COMPANY</span>
+        </div>
+        <div class="hidden md:flex gap-10 text-xs font-bold tracking-[0.2em] uppercase">
+            <a href="#inicio" class="nav-link">Início</a>
+            <a href="#lideranca" class="nav-link">Liderança</a>
+            <a href="#conquistas" class="nav-link">História</a>
+              <a href="clanspdg.html" class="nav-link">Clãns</a>
+            <a href="#recrutamento" class="text-red-500 hover:text-red-400 transition-colors">Join Us</a>
+        </div>
+        <button class="md:hidden text-white" id="menuBtn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </button>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="inicio" class="min-h-screen flex flex-col justify-center items-center relative text-center overflow-hidden">
+        
+        <div class="absolute inset-0 z-0 bg-black">
+            <div class="carousel-container" id="heroCarousel">
+                <div class="carousel-item active" style="background-image: url('image1\ \(1\).jpeg');"></div>
+                <div class="carousel-item" style="background-image: url('image1\ \(2\).jpeg');"></div>
+                <div class="carousel-item" style="background-image: url('image1\ \(3\).jpeg');"></div>
+                <div class="carousel-item" style="background-image: url('image1\ \(4\).jpeg');"></div>
+                <div class="carousel-overlay"></div>
+            </div>
+        </div>
+
+        <div class="z-10 animate-fade px-4">
+            <h2 class="text-xs md:text-sm tracking-[0.6em] uppercase text-red-600 font-black mb-6 text-glow">Bem-vinda à PDG Company</h2>
+            <h1 class="text-7xl md:text-[10rem] font-black tracking-tighter leading-none mb-8 italic uppercase text-white">
+                DOMÍNIO<br><span class="text-outline text-transparent">ABSOLUTO</span>
+            </h1>
+            <p class="max-w-2xl mx-auto text-white text-base md:text-lg mb-12 leading-relaxed font-medium drop-shadow-2xl">
+                Elevamos o padrão do gaming competitivo. Estrutura sólida, táticas agressivas e execução de elite.
+            </p>
+            <div class="flex flex-col md:flex-row gap-6 justify-center">
+                <a href="#recrutamento" class="red-gradient px-12 py-5 text-sm font-black uppercase tracking-widest rounded-sm hover:scale-105 transition-all shadow-xl shadow-red-900/30">
+                    Candidata-te Agora
+                </a>
+                <a href="#lideranca" class="bg-white px-12 py-5 text-sm font-black uppercase tracking-widest rounded-sm text-black hover:bg-red-600 hover:text-white transition-all">
+                    Ver Líder
+                </a>
+            </div>
+        </div>
+
+        <div class="absolute bottom-24 flex gap-3 z-20">
+            <div class="w-10 h-1.5 bg-red-600 rounded-full cursor-pointer transition-all" onclick="setSlide(0)"></div>
+            <div class="w-10 h-1.5 bg-white/30 rounded-full cursor-pointer transition-all" onclick="setSlide(1)"></div>
+            <div class="w-10 h-1.5 bg-white/30 rounded-full cursor-pointer transition-all" onclick="setSlide(2)"></div>
+            <div class="w-10 h-1.5 bg-white/30 rounded-full cursor-pointer transition-all" onclick="setSlide(3)"></div>
+            <div class="w-10 h-1.5 bg-white/30 rounded-full cursor-pointer transition-all" onclick="setSlide(4)"></div>
+        </div>
+    </section>
+
+    <!-- Leadership Section -->
+    <section id="lideranca" class="py-32 px-8 max-w-7xl mx-auto">
+        <div class="flex flex-col md:flex-row justify-between items-end mb-20 gap-8">
+            <div>
+                <span class="text-red-600 font-black tracking-widest uppercase text-xs italic">O Comando</span>
+                <h3 class="text-6xl font-black uppercase tracking-tighter mt-2 italic text-white">Liderança</h3>
+            </div>
+            <p class="text-gray-400 max-w-sm text-sm font-medium border-l-2 border-red-600 pl-4">A força estratégica por trás da Company.</p>
+        </div>
+
+        <div class="flex justify-center">
+            <div class="glass-card p-10 group relative overflow-hidden w-full max-w-lg text-center">
+                <!-- Imagem do Líder -->
+                <div class="mb-8 relative inline-block">
+                    <div class="absolute inset-0 bg-red-600 rounded-full blur-md opacity-20 group-hover:opacity-50 transition-opacity"></div>
+                    <img src="WhatsApp Image 2026-01-06 at 3.38.41 PM.jpeg" alt="Pardal" class="w-48 h-48 rounded-full border-4 border-red-600 object-cover relative z-10 grayscale hover:grayscale-0 transition-all duration-500 mx-auto">
+                </div>
+                
+                <div class="w-24 h-2 bg-red-600 mx-auto mb-8"></div>
+                <h4 class="text-6xl font-black mb-2 group-hover:text-red-500 transition-colors italic uppercase tracking-tighter text-white">Pardal</h4>
+                <p class="text-sm uppercase tracking-[0.5em] text-red-500 font-bold mb-10">Founder & CEO</p>
+                
+                <!-- Redes Sociais Solicitadas -->
+                <div class="flex gap-8 justify-center items-center">
+                    <a href="https://www.youtube.com/@PardalGaming" target="_blank" class="text-gray-400 hover:text-[#FF0000] transition-all transform hover:scale-125">
+                        <i class="fa-brands fa-youtube text-4xl"></i>
+                    </a>
+                    <a href="https://discord.gg/X7hCQ7hREM" target="_blank" class="text-gray-400 hover:text-[#5865F2] transition-all transform hover:scale-125">
+                        <i class="fa-brands fa-discord text-4xl"></i>
+                    </a>
+                    <a href="https://www.twitch.tv/pardalgamingtv" target="_blank" class="text-gray-400 hover:text-[#9146FF] transition-all transform hover:scale-125">
+                        <i class="fa-brands fa-twitch text-4xl"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Achievements Section -->
+    <section id="conquistas" class="bg-[#050505] py-32 px-8 border-y border-white/5">
+        <div class="max-w-7xl mx-auto">
+            <h3 class="text-center text-5xl font-black uppercase mb-24 italic">Histórico <span class="text-red-600">Lendário</span></h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                
+                <!-- Nova Conquista: Império Full Tag -->
+                <div class="p-10 border-t-4 border-red-600 bg-white/[0.03] hover:bg-white/[0.08] transition-all relative overflow-hidden md:col-span-2">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
+                        <div class="z-10">
+                            <span class="text-red-600 font-black text-6xl italic block mb-2">Final de 2025</span>
+                            <h4 class="text-3xl md:text-4xl font-black uppercase mb-6 italic text-white text-glow">A Ascensão das Três Tags</h4>
+                            <p class="text-gray-300 text-lg leading-relaxed max-w-4xl font-medium mb-8">
+                                A PDG atingiu o seu auge organizacional ao consolidar 3 divisões completas. Uma demonstração de poder, influência e gestão de comunidade sem precedentes no servidor.
+                            </p>
+                            <div class="flex flex-wrap gap-4">
+                                <span class="tag-badge">PARDALGAMING</span>
+                                <span class="tag-badge">PDGCompany</span>
+                                <span class="tag-badge">PDGAcademy</span>
+                            </div>
+                        </div>
+                        <div class="mt-6 md:mt-0 opacity-20">
+                            <svg width="120" height="120" viewBox="0 0 24 24" fill="#ff0000"><path d="M12 2L4.5 20.29L5.21 21L12 18L18.79 21L19.5 20.29L12 2Z"/></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Conquista: Pardal Nível 100 -->
+                <div class="p-10 border-t-4 border-purple-600 bg-white/[0.03] hover:bg-white/[0.08] transition-all relative overflow-hidden">
+                    <span class="text-purple-600 font-black text-5xl italic block mb-2">28/01/2025</span>
+                    <h4 class="text-2xl font-black uppercase mb-4 italic text-white purple-glow">1ª Assassina Nível 100</h4>
+                    <p class="text-gray-400 font-medium">
+                        Pardal conquistou o Nível 100 no servidor Idhas e dominou o Rank de Assassinas por tempo indeterminado.
+                    </p>
+                </div>
+
+                <!-- Conquista: Coroa do SOD -->
+                <div class="p-10 border-t-4 border-yellow-600 bg-white/[0.03] hover:bg-white/[0.08] transition-all relative overflow-hidden">
+                    <span class="text-yellow-600 font-black text-5xl italic block mb-2">12/12/2025</span>
+                    <h4 class="text-2xl font-black uppercase mb-4 italic text-white gold-glow">1ª Coroa do SOD</h4>
+                    <p class="text-gray-400 font-medium">
+                        O momento em que a PDG Company provou a sua superioridade tática ao conquistar o topo do campo de batalha.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Recruitment Section -->
+    <section id="recrutamento" class="py-32 px-8 bg-black relative">
+        <div class="max-w-3xl mx-auto text-center">
+            <h3 class="text-6xl font-black uppercase italic mb-8 text-glow">Protocolo</h3>
+            <p class="text-gray-200 mb-16 font-bold">Apenas os melhores são aceites. Seleciona a tua divisão e candidata-te.</p>
+            
+            <form class="text-left space-y-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="space-y-2">
+                        <label class="text-[10px] uppercase tracking-widest text-red-600 font-bold ml-1">Nickname</label>
+                        <input type="text" placeholder="PARDAL" class="w-full bg-white/5 border border-white/20 p-5 focus:border-red-600 outline-none transition-all text-white font-bold uppercase">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] uppercase tracking-widest text-red-600 font-bold ml-1">Divisão Pretendida</label>
+                        <select class="w-full bg-white/5 border border-white/20 p-5 focus:border-red-600 outline-none transition-all text-white font-bold uppercase appearance-none">
+                            <option value="gaming">PARDALGAMING</option>
+                            <option value="company">PDGCompany</option>
+                            <option value="academy">PDGAcademy</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] uppercase tracking-widest text-red-600 font-bold ml-1">Discord ID</label>
+                    <input type="text" placeholder="USER#0000" class="w-full bg-white/5 border border-white/20 p-5 focus:border-red-600 outline-none transition-all text-white font-bold uppercase">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] uppercase tracking-widest text-red-600 font-bold ml-1">Motivação</label>
+                    <textarea rows="4" placeholder="QUAL O TEU CONTRIBUTO?" class="w-full bg-white/5 border border-white/20 p-5 focus:border-red-600 outline-none transition-all text-white font-bold uppercase"></textarea>
+                </div>
+                <button type="submit" class="w-full red-gradient py-6 font-black uppercase tracking-[0.4em] text-lg hover:brightness-125 transition-all">Submeter Protocolo</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-16 border-t border-red-900/30 px-8 text-center bg-black">
+        <div class="text-xl font-black text-white italic mb-6">PDG<span class="text-red-600">COMPANY</span></div>
+        <div class="text-gray-400 text-[10px] uppercase tracking-[0.3em] font-bold">
+            Resiliência • Disciplina • Superioridade
+        </div>
+        <div class="mt-8 text-gray-700 text-[9px]">© 2026 PDG COMPANY - TODOS OS DIREITOS RESERVADOS.</div>
+    </footer>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.carousel-item');
+        const indicators = document.querySelectorAll('.bottom-24 div');
+
+        function showSlide(n) {
+            slides.forEach(slide => slide.classList.remove('active'));
+            indicators.forEach(ind => {
+                ind.classList.remove('bg-red-600');
+                ind.classList.add('bg-white/30');
+                ind.style.width = "40px";
+            });
+            
+            currentSlide = (n + slides.length) % slides.length;
+            slides[currentSlide].classList.add('active');
+            indicators[currentSlide].classList.add('bg-red-600');
+            indicators[currentSlide].classList.remove('bg-white/30');
+            indicators[currentSlide].style.width = "60px";
+        }
+
+        function setSlide(n) { showSlide(n); }
+        function nextSlide() { showSlide(currentSlide + 1); }
+
+        setInterval(nextSlide, 5000);
+
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        document.getElementById('menuBtn').addEventListener('click', () => {
+            const nav = document.querySelector('nav div.hidden');
+            nav.classList.toggle('hidden');
+            nav.classList.toggle('flex');
+            nav.classList.toggle('flex-col');
+            nav.classList.toggle('absolute');
+            nav.classList.toggle('top-full');
+            nav.classList.toggle('left-0');
+            nav.classList.toggle('w-full');
+            nav.classList.toggle('bg-black');
+            nav.classList.toggle('p-8');
+            nav.classList.toggle('gap-8');
+        });
+    </script>
+</body>
+</html>
