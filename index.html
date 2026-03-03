@@ -1,214 +1,559 @@
-<!DOCTYPE html>
-<html lang="pt">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AccountPro Dashboard</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- React & Babel -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #050505; color: white; margin: 0; }
-        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05); }
-        select option { background: #0f172a; color: white; }
-    </style>
-</head>
-<body>
-    <div id="root"></div>
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { 
+  Target, Plus, Trash2, CheckCircle2, Circle, Trophy, 
+  LayoutDashboard, ReceiptText, User, CalendarDays, 
+  TrendingUp, Wallet, X, Camera, Check, Filter, Sparkles
+} from 'lucide-react';
+import { Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+} from 'chart.js';
 
-    <!-- Firebase SDK via CDN -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
-        // CONFIGURAÇÃO FIREBASE
-        // Nota: Substitua pelos seus dados se estiver usando um Firebase próprio.
-        const firebaseConfig = {
-            apiKey: "",
-            authDomain: "",
-            projectId: "",
-            storageBucket: "",
-            messagingSenderId: "",
-            appId: ""
-        };
+const RATES = { 
+  'PIX': 0, 'DEBITO': 1.69, '1X': 3.5, '2X': 4.85, '3X': 5.55, '4X': 6.25, '5X': 6.95, '6X': 7.65, 
+  '7X': 8.49, '8X': 9.12, '9X': 9.75, '10X': 9.95, '11X': 11, '12X': 10.9, 
+  '13X': 13.02, '14X': 13.62, '15X': 14.22, '16X': 14.81, '17X': 15.4, '18X': 15.2
+};
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = "account-pro-v1";
+// --- COMPONENTE DE FUNDO ANIMADO ---
+const AnimatedBackground = () => {
+  return (
+    <div className="fixed inset-0 z-0 pointer-events-none opacity-40">
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#00FF41]/10 rounded-full blur-[120px] animate-pulse"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/10 rounded-full blur-[120px]" style={{ animationDuration: '8s', animationName: 'pulse', animationIterationCount: 'infinite' }}></div>
+      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 contrast-150"></div>
+    </div>
+  );
+};
 
-        // Tornar global para o Babel acessar
-        window.FirebaseDB = { db, auth, collection, addDoc, onSnapshot, signInAnonymously, onAuthStateChanged, appId };
-    </script>
+export default function App() {
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [transactions, setTransactions] = useState(() => {
+    const saved = localStorage.getItem('eflow_elite_v2');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [profile, setProfile] = useState(() => {
+    const saved = localStorage.getItem('eflow_profile');
+    return saved ? JSON.parse(saved) : { name: 'ELITE USER', photo: '', goal: 5000 };
+  });
+  
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [dateFilter, setDateFilter] = useState("");
+  const [formType, setFormType] = useState('venda');
 
-    <script type="text/babel">
-        const { useState, useEffect } = React;
-        const { 
-            Users, Sword, Target, Gem, Plus, Calendar, 
-            Clock, Camera, X, CheckCircle, ChevronRight, 
-            Calculator, Cloud, AlertCircle 
-        } = lucide;
+  const [fDesc, setFDesc] = useState("");
+  const [fGross, setFGross] = useState("");
+  const [fCusto, setFCusto] = useState("");
+  const [fMethod, setFMethod] = useState("PIX");
+  const [fValue, setFValue] = useState("");
+  const [fCat, setFCat] = useState("MORADIA");
+  const [fDate, setFDate] = useState(new Date().toISOString().split('T')[0]);
 
-        const CLASSES = ['Arqueira', 'Lutador', 'Mago', 'Mecânico', 'Atalanta'];
+  useEffect(() => {
+    localStorage.setItem('eflow_elite_v2', JSON.stringify(transactions));
+  }, [transactions]);
 
-        const App = () => {
-            const { db, auth, collection, addDoc, onSnapshot, signInAnonymously, onAuthStateChanged, appId } = window.FirebaseDB;
-            
-            const [user, setUser] = useState(null);
-            const [activeTab, setActiveTab] = useState('vitrine');
-            const [clients, setClients] = useState([]);
-            const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
-            const [loading, setLoading] = useState(true);
-            const [dbError, setDbError] = useState(null);
-            
-            const [newClient, setNewClient] = useState({ 
-                nick: '', level: '', classe: 'Arqueira', nomeReal: '', whatsapp: '', foto: null 
-            });
+  useEffect(() => {
+    localStorage.setItem('eflow_profile', JSON.stringify(profile));
+  }, [profile]);
 
-            useEffect(() => {
-                const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
-                    if (!currentUser) {
-                        signInAnonymously(auth);
+  // Efeito de rastreamento do mouse para o Glow
+  useEffect(() => {
+    const handleMove = (e) => setMousePos({ x: e.clientX, y: e.clientY });
+    window.addEventListener('mousemove', handleMove);
+    return () => window.removeEventListener('mousemove', handleMove);
+  }, []);
+
+  const currentMonth = new Date().toISOString().substring(0, 7);
+  
+  const filteredTransactions = useMemo(() => {
+    return transactions
+      .filter(t => !dateFilter || t.date.substring(0, 7) === dateFilter)
+      .sort((a, b) => new Date(b.date) - new Date(a.date));
+  }, [transactions, dateFilter]);
+
+  const stats = useMemo(() => {
+    let lucroTotal = 0; let pendencias = 0; let investido = 0; let lucroMesAtual = 0;
+    transactions.forEach(t => {
+      const isCurrent = t.date.substring(0, 7) === currentMonth;
+      if (t.type === 'venda') {
+        lucroTotal += t.profit;
+        if (isCurrent) lucroMesAtual += t.profit;
+      } else if (t.type === 'calendar' && !t.paid) {
+        pendencias += t.amount;
+      } else if (t.type === 'invest') {
+        investido += t.amount;
+      }
+    });
+    return { lucroTotal, pendencias, investido, lucroMesAtual };
+  }, [transactions, currentMonth]);
+
+  const months = useMemo(() => {
+    const distinct = [...new Set(transactions.map(t => t.date.substring(0, 7)))];
+    return distinct.sort().reverse();
+  }, [transactions]);
+
+  const handleAddRecord = (e) => {
+    e.preventDefault();
+    const newRecord = {
+      id: Date.now(),
+      type: formType,
+      desc: fDesc,
+      date: fDate || new Date().toISOString().split('T')[0]
+    };
+    if (formType === 'venda') {
+      const g = parseFloat(fGross) || 0;
+      const c = parseFloat(fCusto) || 0;
+      newRecord.profit = (g * (1 - RATES[fMethod] / 100)) - c;
+      newRecord.method = fMethod;
+      newRecord.gross = g;
+    } else {
+      newRecord.amount = parseFloat(fValue) || 0;
+      if (formType === 'calendar') {
+        newRecord.cat = fCat;
+        newRecord.paid = false;
+      }
+    }
+    setTransactions([newRecord, ...transactions]);
+    resetForm();
+    setIsModalOpen(false);
+  };
+
+  const resetForm = () => {
+    setFDesc(""); setFGross(""); setFCusto(""); setFMethod("PIX");
+    setFValue(""); setFCat("MORADIA"); setFDate(new Date().toISOString().split('T')[0]);
+  };
+
+  const deleteT = (id) => setTransactions(transactions.filter(t => t.id !== id));
+  const togglePaid = (id) => setTransactions(transactions.map(t => t.id === id ? { ...t, paid: !t.paid } : t));
+  const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+
+  const chartData = {
+    labels: filteredTransactions.slice(0, 10).reverse().map(t => t.date.split('-').reverse().slice(0, 2).join('/')),
+    datasets: [{
+      label: 'Fluxo',
+      data: filteredTransactions.slice(0, 10).reverse().map(t => t.type === 'venda' ? t.profit : -t.amount),
+      borderColor: '#00FF41',
+      backgroundColor: 'rgba(0, 255, 65, 0.1)',
+      fill: true,
+      tension: 0.4,
+      borderWidth: 3,
+      pointRadius: 4,
+      pointBackgroundColor: '#00FF41'
+    }]
+  };
+
+  return (
+    <div className="flex flex-col md:flex-row h-screen bg-[#020202] text-white font-sans overflow-hidden selection:bg-[#00FF41]/30">
+      <AnimatedBackground />
+
+      {/* SIDEBAR */}
+      <aside className="relative w-full md:w-64 bg-black/40 backdrop-blur-xl border-r border-white/5 flex flex-col z-40 overflow-y-auto shrink-0">
+        <div className="p-8">
+          <div className="flex items-center gap-3 mb-10 group cursor-default">
+            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(255,255,255,0.1)] group-hover:rotate-12 transition-transform">
+              <TrendingUp size={22} className="text-black" strokeWidth={3} />
+            </div>
+            <h1 className="font-black text-xl tracking-tighter uppercase">Elite<span className="text-white/20">Flow</span></h1>
+          </div>
+
+          <nav className="space-y-6">
+            <div>
+              <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] mb-4">Negócios</p>
+              {[
+                { id: 'dashboard', icon: <LayoutDashboard size={18} />, label: 'Painel Geral' },
+                { id: 'ledger', icon: <ReceiptText size={18} />, label: 'Vendas' }
+              ].map(item => (
+                <button 
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)} 
+                  className={`w-full flex items-center gap-4 py-2 text-sm font-bold transition-all duration-300 transform ${activeTab === item.id ? 'text-[#00FF41] translate-x-2' : 'text-white/40 hover:text-white hover:translate-x-1'}`}
+                >
+                  {item.icon} {item.label}
+                </button>
+              ))}
+            </div>
+
+            <div>
+              <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] mb-4 pt-2">Vida Pessoal</p>
+              {[
+                { id: 'personal', icon: <Wallet size={18} />, label: 'Gastos Pessoais' },
+                { id: 'calendar', icon: <CalendarDays size={18} />, label: 'Contas e Fixos' },
+                { id: 'invest', icon: <Target size={18} />, label: 'Investimentos' }
+              ].map(item => (
+                <button 
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)} 
+                  className={`w-full flex items-center gap-4 py-2 mt-3 text-sm font-bold transition-all duration-300 transform ${activeTab === item.id ? 'text-[#00FF41] translate-x-2' : 'text-white/40 hover:text-white hover:translate-x-1'}`}
+                >
+                  {item.icon} {item.label}
+                </button>
+              ))}
+            </div>
+          </nav>
+        </div>
+
+        <div className="mt-auto p-6 space-y-4">
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="group relative w-full py-4 bg-[#00FF41] text-black font-black rounded-2xl flex items-center justify-center gap-3 text-xs uppercase tracking-widest overflow-hidden transition-all active:scale-95 shadow-[0_10px_30px_rgba(0,255,65,0.2)]"
+          >
+            <div className="absolute inset-0 bg-white/20 -translate-x-full group-hover:translate-x-full transition-transform duration-500"></div>
+            <Plus size={16} strokeWidth={3} className="relative z-10" /> <span className="relative z-10">Novo Registro</span>
+          </button>
+          
+          <div className="pt-4 border-t border-white/5">
+            <button onClick={() => setIsProfileOpen(true)} className="flex items-center gap-3 group w-full p-2 rounded-xl hover:bg-white/5 transition-all">
+              <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden bg-neutral-800 shrink-0 shadow-lg">
+                {profile.photo ? <img src={profile.photo} className="w-full h-full object-cover" /> : <User className="p-2 w-full h-full text-white/20" />}
+              </div>
+              <div className="text-left overflow-hidden">
+                <p className="text-[10px] font-black uppercase truncate group-hover:text-[#00FF41] transition-colors">{profile.name}</p>
+                <p className="text-[8px] text-white/30 font-bold">AJUSTES ELITE</p>
+              </div>
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      {/* MAIN CONTENT */}
+      <main className="relative flex-1 overflow-y-auto p-6 md:p-12 lg:p-16 scrollbar-hide z-10">
+        
+        {/* HEADER */}
+        <header className="mb-12 flex flex-col md:flex-row justify-between items-start md:items-end gap-6 animate-in fade-in slide-in-from-top duration-700">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00FF41]/10 border border-[#00FF41]/20 text-[8px] font-black text-[#00FF41] uppercase tracking-[0.2em] mb-3">
+              <Sparkles size={10} /> Sistema Operacional Ativo
+            </div>
+            <h2 className="text-5xl font-extrabold tracking-tighter leading-none">
+              {activeTab === 'dashboard' && "Dashboard"}
+              {activeTab === 'ledger' && "Vendas"}
+              {activeTab === 'personal' && "Gastos"}
+              {activeTab === 'calendar' && "Fixos"}
+              {activeTab === 'invest' && "Investimentos"}
+            </h2>
+          </div>
+          <div className="flex gap-4">
+            <select 
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="bg-white/5 border border-white/10 rounded-xl px-6 py-3 text-[10px] font-black uppercase outline-none focus:border-[#00FF41] cursor-pointer hover:bg-white/10 transition-all appearance-none"
+            >
+              <option value="">Todo Histórico</option>
+              {months.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </div>
+        </header>
+
+        {activeTab === 'dashboard' ? (
+          <div className="space-y-12 animate-in fade-in zoom-in-95 duration-700">
+            {/* STAT CARDS */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[
+                { label: "Lucro Total", val: stats.lucroTotal, color: "#00FF41", bg: "bg-[#0F0F0F]" },
+                { label: "Pendências", val: stats.pendencias, color: "#EAB308", bg: "bg-[#0F0F0F]" },
+                { label: "Investido", val: stats.investido, color: "#60A5FA", bg: "bg-[#0F0F0F]" },
+                { label: "Meta Mensal", val: stats.lucroMesAtual, color: "#00FF41", bg: "bg-gradient-to-br from-[#00FF41]/10 to-transparent", meta: true }
+              ].map((card, i) => (
+                <div key={i} className={`group relative ${card.bg} p-8 rounded-[2.5rem] border border-white/5 overflow-hidden transition-all hover:scale-[1.03] hover:border-white/20`}>
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <p className="text-[9px] font-black text-white/30 uppercase mb-4 tracking-widest">{card.label}</p>
+                  <h3 className="text-3xl font-black" style={{ color: card.color }}>{fmt(card.val)}</h3>
+                  {card.meta && (
+                    <div className="mt-4">
+                      <div className="flex justify-between text-[10px] font-black mb-2 uppercase opacity-40">
+                        <span>Progresso</span>
+                        <span>{Math.min((stats.lucroMesAtual / profile.goal) * 100, 100).toFixed(0)}%</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-[#00FF41] shadow-[0_0_15px_#00FF41] transition-all duration-1000 ease-out"
+                          style={{ width: `${Math.min((stats.lucroMesAtual / profile.goal) * 100, 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* CHARTS & LISTS */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2 bg-[#0F0F0F]/60 backdrop-blur-md p-10 rounded-[3rem] border border-white/5 shadow-2xl">
+                <div className="flex justify-between items-center mb-8">
+                  <h4 className="text-[10px] font-black uppercase text-white/20 tracking-widest">Evolução do Fluxo</h4>
+                  <div className="w-2 h-2 rounded-full bg-[#00FF41] animate-ping"></div>
+                </div>
+                <div className="h-72">
+                  <Line data={chartData} options={{ 
+                    responsive: true, maintainAspectRatio: false, 
+                    plugins: { legend: { display: false } },
+                    scales: { 
+                      y: { grid: { color: 'rgba(255,255,255,0.02)' }, ticks: { color: 'rgba(255,255,255,0.1)', font: { size: 10 } } },
+                      x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.1)', font: { size: 10 } } }
                     }
-                    setUser(currentUser);
-                });
-                return () => unsubscribeAuth();
-            }, []);
-
-            useEffect(() => {
-                if (!user) return;
-                const clientsRef = collection(db, 'artifacts', appId, 'public', 'data', 'clients');
-                
-                const unsubscribe = onSnapshot(clientsRef, (snapshot) => {
-                    const list = snapshot.docs.map(doc => ({
-                        id: doc.id,
-                        ...doc.data()
-                    }));
-                    setClients(list);
-                    setLoading(false);
-                }, (err) => {
-                    setDbError("Erro de permissão ou conexão.");
-                    setLoading(false);
-                });
-                return () => unsubscribe();
-            }, [user]);
-
-            const handleRegister = async (e) => {
-                e.preventDefault();
-                try {
-                    const clientsRef = collection(db, 'artifacts', appId, 'public', 'data', 'clients');
-                    await addDoc(clientsRef, {
-                        ...newClient,
-                        createdAt: new Date().toISOString()
-                    });
-                    setIsRegisterModalOpen(false);
-                    setNewClient({ nick: '', level: '', classe: 'Arqueira', nomeReal: '', whatsapp: '', foto: null });
-                } catch (err) { setDbError("Erro ao salvar."); }
-            };
-
-            const handleFileUpload = (e) => {
-                const file = e.target.files[0];
-                if (file && file.size < 1000000) {
-                    const reader = new FileReader();
-                    reader.onloadend = () => setNewClient(prev => ({ ...prev, foto: reader.result }));
-                    reader.readAsDataURL(file);
-                } else { alert("Imagem muito grande (Max 1MB)"); }
-            };
-
-            const Vitrine = () => (
-                <div className="p-6">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                  }} />
+                </div>
+              </div>
+              
+              <div className="bg-[#0F0F0F]/60 backdrop-blur-md p-10 rounded-[3rem] border border-white/5">
+                <h4 className="text-[10px] font-black uppercase text-white/20 mb-8 tracking-widest">Contas Urgentes</h4>
+                <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scroll">
+                  {transactions.filter(t => t.type === 'calendar' && !t.paid).length === 0 ? (
+                    <div className="text-center py-20 opacity-20 italic text-sm">Caminho livre. Nenhuma pendência.</div>
+                  ) : (
+                    transactions.filter(t => t.type === 'calendar' && !t.paid).map((t, idx) => (
+                      <div key={t.id} className="group flex justify-between items-center p-5 bg-white/[0.03] rounded-2xl border-l-4 border-yellow-500 hover:bg-white/[0.06] transition-all" style={{ animationDelay: `${idx * 100}ms` }}>
                         <div>
-                            <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500 uppercase tracking-widest italic mb-2">Vitrine Global</h2>
-                            <p className="text-slate-500 text-sm flex items-center gap-2"><Cloud size={14} className="text-cyan-500" /> Sincronização Ativa</p>
+                          <p className="text-[11px] font-black group-hover:text-yellow-500 transition-colors">{t.desc}</p>
+                          <p className="text-[9px] text-white/20 uppercase font-bold">{t.date.split('-').reverse().join('/')}</p>
                         </div>
-                        <button onClick={() => setIsRegisterModalOpen(true)} className="flex items-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-black font-black px-6 py-3 rounded-full transition-all shadow-lg uppercase italic text-sm">
-                            <Plus size={20} /> Registrar Herói
-                        </button>
-                    </div>
-
-                    {loading ? (
-                        <div className="text-center py-20 opacity-50 uppercase tracking-widest text-xs">Carregando dados...</div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {clients.map(client => (
-                                <div key={client.id} className="bg-slate-900/40 border border-white/5 rounded-[2rem] overflow-hidden hover:border-cyan-500/40 transition-all">
-                                    <div className="h-48 bg-slate-800 relative">
-                                        {client.foto ? <img src={client.foto} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center opacity-20 text-4xl font-black italic">{client.nick[0]}</div>}
-                                        <div className="absolute top-4 right-4 bg-cyan-500 text-black px-3 py-1 rounded-full text-[10px] font-black italic">LVL {client.level}</div>
-                                    </div>
-                                    <div className="p-6 relative">
-                                        <div className="absolute -top-4 left-6 bg-purple-600 text-white px-3 py-1 rounded text-[10px] font-black uppercase italic">{client.classe}</div>
-                                        <h3 className="text-xl font-black uppercase italic mb-1">{client.nick}</h3>
-                                        <p className="text-cyan-400/80 text-[10px] font-bold uppercase">{client.nomeReal}</p>
-                                        <div className="mt-4 pt-4 border-t border-white/5 flex justify-between text-[10px] text-slate-500 uppercase font-black">
-                                            <span>WhatsApp</span>
-                                            <span className="text-cyan-200">{client.whatsapp}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                        <p className="text-[11px] font-black text-yellow-500">{fmt(t.amount)}</p>
+                      </div>
+                    ))
+                  )}
                 </div>
-            );
-
-            return (
-                <div className="min-h-screen bg-[#050505] text-slate-200">
-                    <div className="flex min-h-screen">
-                        <aside className="hidden md:flex w-64 border-r border-white/5 bg-black/40 flex-col p-4 fixed h-full">
-                            <div className="flex items-center gap-2 py-8 px-2">
-                                <div className="w-8 h-8 bg-cyan-500 rounded flex items-center justify-center font-black text-black italic">A</div>
-                                <span className="font-black uppercase italic tracking-tighter">Account<span className="text-cyan-500">Pro</span></span>
-                            </div>
-                            <nav className="flex-1 space-y-2">
-                                <button onClick={() => setActiveTab('vitrine')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-black uppercase italic text-[10px] tracking-widest ${activeTab === 'vitrine' ? 'bg-cyan-500/10 text-cyan-400' : 'text-slate-500'}`}><Users size={16}/> Vitrine</button>
-                                <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-black uppercase italic text-[10px] tracking-widest text-slate-800 cursor-not-allowed"><Sword size={16}/> Em breve</button>
-                            </nav>
-                        </aside>
-
-                        <main className="flex-1 md:ml-64">
-                            <header className="h-16 border-b border-white/5 flex items-center px-8 bg-black/20 sticky top-0 z-20">
-                                <div className="text-[10px] font-black uppercase text-slate-600 tracking-widest">Dashboard / {activeTab}</div>
-                            </header>
-                            <Vitrine />
-                        </main>
-                    </div>
-
-                    {isRegisterModalOpen && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
-                            <div className="bg-[#0c0c0e] border border-white/10 w-full max-w-md rounded-[2.5rem] p-8">
-                                <div className="flex justify-between items-center mb-8">
-                                    <h3 className="font-black uppercase italic text-xl">Novo <span className="text-cyan-500">Herói</span></h3>
-                                    <button onClick={() => setIsRegisterModalOpen(false)}><X/></button>
-                                </div>
-                                <form onSubmit={handleRegister} className="space-y-4">
-                                    <input required placeholder="Nick" className="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none focus:border-cyan-500" value={newClient.nick} onChange={e => setNewClient({...newClient, nick: e.target.value})} />
-                                    <input required type="number" placeholder="Level" className="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none focus:border-cyan-500" value={newClient.level} onChange={e => setNewClient({...newClient, level: e.target.value})} />
-                                    <select className="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none" value={newClient.classe} onChange={e => setNewClient({...newClient, classe: e.target.value})}>
-                                        {CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
-                                    </select>
-                                    <input required placeholder="Nome Real" className="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none" value={newClient.nomeReal} onChange={e => setNewClient({...newClient, nomeReal: e.target.value})} />
-                                    <input required placeholder="WhatsApp" className="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none" value={newClient.whatsapp} onChange={e => setNewClient({...newClient, whatsapp: e.target.value})} />
-                                    <input type="file" accept="image/*" onChange={handleFileUpload} className="text-xs text-slate-500" />
-                                    <button className="w-full bg-cyan-600 p-4 rounded-xl font-black uppercase italic mt-4 hover:bg-cyan-500 text-black">Salvar na Nuvem</button>
-                                </form>
-                            </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="bg-[#0F0F0F]/80 backdrop-blur-xl rounded-[3rem] border border-white/5 overflow-hidden shadow-2xl">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="text-[10px] font-black uppercase tracking-[0.2em] text-white/20 bg-white/[0.03] border-b border-white/5">
+                    <th className="px-10 py-7">Data</th>
+                    <th className="px-10 py-7">Descrição</th>
+                    {activeTab === 'ledger' && <th className="px-10 py-7">Método</th>}
+                    <th className="px-10 py-7 text-right">Valor Líquido</th>
+                    <th className="px-10 py-7 text-center">Status</th>
+                    <th className="px-10 py-7 text-center">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5 text-sm font-bold">
+                  {filteredTransactions.filter(t => t.type === activeTab || (activeTab === 'ledger' && t.type === 'venda')).map((t, idx) => (
+                    <tr key={t.id} className="hover:bg-[#00FF41]/[0.02] transition-colors group">
+                      <td className="px-10 py-6 text-white/20 text-xs font-mono">{t.date.split('-').reverse().slice(0,2).join('/')}</td>
+                      <td className="px-10 py-6 group-hover:text-white transition-colors">{t.desc}</td>
+                      {activeTab === 'ledger' && <td className="px-10 py-6 text-[10px] text-white/30 uppercase">{t.method}</td>}
+                      <td className={`px-10 py-6 text-right font-black ${t.type === 'venda' ? 'text-[#00FF41]' : t.type === 'invest' ? 'text-blue-400' : 'text-red-400'}`}>
+                        {fmt(t.type === 'venda' ? t.profit : t.amount)}
+                      </td>
+                      <td className="px-10 py-6 text-center">
+                        <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase border transition-all ${t.paid || t.type === 'venda' ? 'bg-[#00FF41]/10 text-[#00FF41] border-[#00FF41]/20' : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'}`}>
+                          {t.type === 'venda' ? "Concluído" : t.paid ? "Pago" : "Pendente"}
+                        </span>
+                      </td>
+                      <td className="px-10 py-6 text-center">
+                        <div className="flex items-center justify-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {activeTab === 'calendar' && (
+                            <button onClick={() => togglePaid(t.id)} className="p-2 text-[#00FF41] hover:bg-[#00FF41]/20 rounded-lg transition-all">
+                              <Check size={18} strokeWidth={3} />
+                            </button>
+                          )}
+                          <button onClick={() => deleteT(t.id)} className="p-2 text-red-500/50 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all">
+                            <Trash2 size={18} />
+                          </button>
                         </div>
-                    )}
-                </div>
-            );
-        };
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </main>
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
-</body>
-</html>
+      {/* MODAL LANÇAMENTO */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-3xl z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
+          <div className="bg-[#0F0F0F] p-10 md:p-14 rounded-[4rem] border border-white/10 w-full max-w-md shadow-[0_0_100px_rgba(0,0,0,0.5)] animate-in zoom-in-95 slide-in-from-bottom-10 duration-500">
+            <div className="flex justify-between items-center mb-10">
+              <h2 className="text-3xl font-black italic tracking-tighter">SISTEMA <span className="text-[#00FF41]">INPUT</span></h2>
+              <button onClick={() => setIsModalOpen(false)} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/5 text-white/20 hover:text-white transition-all"><X /></button>
+            </div>
+            
+            <div className="grid grid-cols-4 p-1.5 bg-black rounded-2xl mb-8 border border-white/5 text-[9px] font-black uppercase">
+              {['venda', 'pessoal', 'calendar', 'invest'].map(type => (
+                <button 
+                  key={type}
+                  onClick={() => setFormType(type)}
+                  className={`py-3.5 rounded-xl transition-all duration-300 ${formType === type ? 'bg-[#00FF41] text-black shadow-lg' : 'text-white/30 hover:text-white'}`}
+                >
+                  {type === 'calendar' ? 'Fixo' : type === 'invest' ? 'Invest' : type}
+                </button>
+              ))}
+            </div>
+
+            <form onSubmit={handleAddRecord} className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase text-white/20 ml-2">Identificação</label>
+                <input 
+                  required value={fDesc} onChange={e => setFDesc(e.target.value)}
+                  className="w-full bg-black/40 border border-white/5 p-5 rounded-2xl outline-none focus:border-[#00FF41] focus:bg-black transition-all font-bold placeholder:text-white/5" 
+                  placeholder="Nome do registro..." 
+                />
+              </div>
+              
+              <div className="grid grid-cols-1 gap-6">
+                {formType === 'venda' ? (
+                  <>
+                    <div className="grid grid-cols-2 gap-4">
+                      <input 
+                        type="number" step="0.01" required
+                        value={fGross} onChange={e => setFGross(e.target.value)}
+                        className="w-full bg-black border border-white/5 p-5 rounded-2xl outline-none focus:border-[#00FF41] font-bold" 
+                        placeholder="Bruto (R$)" 
+                      />
+                      <input 
+                        type="number" step="0.01"
+                        value={fCusto} onChange={e => setFCusto(e.target.value)}
+                        className="w-full bg-black border border-white/5 p-5 rounded-2xl outline-none focus:border-[#00FF41] font-bold" 
+                        placeholder="Custo (R$)" 
+                      />
+                    </div>
+                    <select 
+                      value={fMethod} onChange={e => setFMethod(e.target.value)}
+                      className="w-full bg-black border border-white/5 p-5 rounded-2xl outline-none font-black text-xs uppercase cursor-pointer focus:border-[#00FF41]"
+                    >
+                      <option value="PIX">PIX (TAXA 0%)</option>
+                      <option value="DEBITO">DÉBITO (1.69%)</option>
+                      {Array.from({length: 18}, (_, i) => i + 1).map(i => (
+                        <option key={i} value={`${i}X`}>{i}X CRÉDITO ({RATES[`${i}X`]}%)</option>
+                      ))}
+                    </select>
+                  </>
+                ) : (
+                  <div className="space-y-6">
+                    <input 
+                      type="number" step="0.01" required
+                      value={fValue} onChange={e => setFValue(e.target.value)}
+                      className="w-full bg-black border border-white/5 p-5 rounded-2xl outline-none focus:border-[#00FF41] font-bold" 
+                      placeholder="Valor Total (R$)" 
+                    />
+                    {formType === 'calendar' && (
+                      <select 
+                        value={fCat} onChange={e => setFCat(e.target.value)}
+                        className="w-full bg-black border border-white/5 p-5 rounded-2xl outline-none font-black text-xs uppercase focus:border-[#00FF41]"
+                      >
+                        <option value="MORADIA">Aluguel / Fixos</option>
+                        <option value="CARRO">Transporte</option>
+                        <option value="CARTAO">Cartões</option>
+                        <option value="SERVICOS">Assinaturas</option>
+                        <option value="OUTROS">Diversos</option>
+                      </select>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase text-white/20 ml-2">Data do Registro</label>
+                <input 
+                  type="date" value={fDate} onChange={e => setFDate(e.target.value)}
+                  className="w-full bg-black border border-white/5 p-5 rounded-2xl outline-none font-bold text-white/50" 
+                />
+              </div>
+
+              <button type="submit" className="group w-full py-5 bg-[#00FF41] text-black font-black rounded-2xl text-xs uppercase tracking-widest mt-4 hover:scale-[1.02] active:scale-95 transition-all shadow-[0_20px_40px_rgba(0,255,65,0.3)]">
+                PROCESSAR LANÇAMENTO
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL PERFIL */}
+      {isProfileOpen && (
+        <div className="fixed inset-0 bg-black/95 backdrop-blur-3xl z-[110] flex items-center justify-center p-6 animate-in fade-in duration-300">
+          <div className="bg-[#0F0F0F] p-12 rounded-[4rem] border border-white/5 w-full max-w-md text-center shadow-2xl animate-in zoom-in-90 duration-500">
+            <h3 className="text-[10px] font-black uppercase text-white/20 mb-10 tracking-[0.5em]">Central do Operador</h3>
+            
+            <div className="relative inline-block mb-12 group">
+              <div className="absolute inset-0 bg-[#00FF41] rounded-[3rem] blur-2xl opacity-20 group-hover:opacity-40 transition-opacity"></div>
+              <div className="relative w-36 h-36 rounded-[3rem] overflow-hidden border-2 border-white/10 group-hover:border-[#00FF41] transition-all bg-neutral-900 shadow-2xl">
+                {profile.photo ? <img src={profile.photo} className="w-full h-full object-cover" /> : <User size={50} className="m-auto mt-11 text-white/10" />}
+              </div>
+              <label className="absolute -bottom-4 -right-4 bg-[#00FF41] p-4 rounded-3xl cursor-pointer shadow-xl hover:scale-110 active:scale-90 transition-all text-black">
+                <Camera size={24} strokeWidth={3} />
+                <input 
+                  type="file" className="hidden" accept="image/*" 
+                  onChange={e => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => setProfile({...profile, photo: reader.result});
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
+              </label>
+            </div>
+
+            <div className="space-y-8 mb-12">
+              <div className="text-left group">
+                <label className="text-[10px] font-black uppercase text-white/20 ml-2 group-hover:text-[#00FF41] transition-colors">Nome</label>
+                <input 
+                  value={profile.name} onChange={e => setProfile({...profile, name: e.target.value})}
+                  className="w-full bg-black/50 p-5 rounded-2xl font-black uppercase text-xl border border-white/5 outline-none focus:border-[#00FF41] transition-all" 
+                />
+              </div>
+              <div className="text-left group">
+                <label className="text-[10px] font-black uppercase text-white/20 ml-2 group-hover:text-[#00FF41] transition-colors">Meta Mensal (R$)</label>
+                <input 
+                  type="number" value={profile.goal} onChange={e => setProfile({...profile, goal: parseFloat(e.target.value) || 0})}
+                  className="w-full bg-black/50 p-5 rounded-2xl font-black text-[#00FF41] text-2xl border border-white/5 outline-none focus:border-[#00FF41] transition-all" 
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <button onClick={() => setIsProfileOpen(false)} className="py-5 bg-[#00FF41] text-black rounded-3xl font-black text-xs uppercase tracking-widest hover:brightness-110 active:scale-95 transition-all shadow-lg">
+                SALVAR
+              </button>
+              <button 
+                onClick={() => { if(confirm("Deseja deletar permanentemente todos os dados?")) { setTransactions([]); setIsProfileOpen(false); } }}
+                className="py-5 bg-red-500/10 text-red-500 border border-red-500/20 rounded-3xl font-black text-xs uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all"
+              >
+                ZERAR
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ESTILOS DE ANIMAÇÃO */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slide-up { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 10px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: rgba(0,255,65,0.2); }
+
+        .animate-in { animation: fade-in 0.5s ease-out forwards; }
+        .slide-in-top { animation: slide-up 0.6s ease-out forwards; }
+
+        input[type="date"]::-webkit-calendar-picker-indicator {
+          filter: invert(1);
+          opacity: 0.3;
+          cursor: pointer;
+        }
+      `}} />
+    </div>
+  );
+}
